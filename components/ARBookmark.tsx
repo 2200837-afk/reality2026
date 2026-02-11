@@ -11,15 +11,16 @@ interface ARBookmarkProps {
 export const ARBookmark: React.FC<ARBookmarkProps> = ({ title, simId }) => {
   const { trackARInteraction } = useAnalytics();
   
-  // Construct a clean deep-link URL for Vercel/Production
-  // We use window.location.origin to get the base domain and append params
+  // Use a special mode 'ar-only' that triggers a full-screen dedicated AR experience
   const baseUrl = window.location.origin + window.location.pathname;
-  const deepLinkUrl = `${baseUrl}?mode=ar&sim=${simId}`;
+  const deepLinkUrl = `${baseUrl}?mode=ar-only&sim=${simId}`;
   
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(deepLinkUrl)}`;
 
   const handleManualTrigger = () => {
       trackARInteraction(simId, `qr_manual_launch_${simId}`);
+      // Open in a new tab to simulate what the phone would do
+      window.open(deepLinkUrl, '_blank');
   };
 
   return (
@@ -34,21 +35,23 @@ export const ARBookmark: React.FC<ARBookmarkProps> = ({ title, simId }) => {
       <div className="flex-1 text-center md:text-left">
         <div className="flex items-center justify-center md:justify-start gap-2 text-cyan-400 mb-2">
           <QrCode size={20} />
-          <span className="font-bold uppercase tracking-widest text-sm">AR Interaction Trigger</span>
+          <span className="font-bold uppercase tracking-widest text-sm">Dedicated AR Manifestation</span>
         </div>
-        <h3 className="text-xl font-bold text-white mb-2">Launch Immersive AR: {title}</h3>
+        <h3 className="text-xl font-bold text-white mb-2">Immersive Scene: {title}</h3>
         <p className="text-slate-400 text-sm max-w-md">
-          Scan this bookmark with your mobile device to manifest the relativistic 3D model in your physical space. 
-          The mobile lens will focus specifically on the <strong>{title}</strong> simulation.
+          Scan this with your mobile phone. It will open a <strong>standalone AR manifestation</strong> of the {title} experiment, overlaying the 3D physics model directly onto your physical surroundings.
         </p>
         
         <div className="mt-4 flex flex-wrap justify-center md:justify-start gap-4">
           <div className="flex items-center gap-2 text-xs text-slate-500 bg-space-900 px-3 py-1.5 rounded-full border border-space-700">
-            <Smartphone size={14} /> Mobile Optimized
+            <Smartphone size={14} /> Mobile View Optimized
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 bg-space-900 px-3 py-1.5 rounded-full border border-space-700">
-            <ExternalLink size={14} /> Direct Deep Link
-          </div>
+          <button 
+            onClick={handleManualTrigger}
+            className="flex items-center gap-2 text-xs text-cyan-400 bg-cyan-900/20 px-3 py-1.5 rounded-full border border-cyan-500/30 hover:bg-cyan-900/40 transition-colors"
+          >
+            <ExternalLink size={14} /> Test AR Route
+          </button>
         </div>
       </div>
 
@@ -58,7 +61,7 @@ export const ARBookmark: React.FC<ARBookmarkProps> = ({ title, simId }) => {
          <div className="flex items-start gap-3 max-w-[200px]">
             <div className="mt-1"><Info size={14} className="text-cyan-500" /></div>
             <p className="text-[11px] text-slate-500 leading-tight">
-              Deep Linking: This QR code bypasses the home screen to land exactly on the {simId} experiment context.
+              Deep Linking: This route strips away the website UI for a pure AR camera experience on your device.
             </p>
          </div>
       </div>

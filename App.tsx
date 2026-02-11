@@ -10,11 +10,15 @@ import { QuestionnairePage } from './components/QuestionnairePage';
 import { QuizPage } from './components/QuizPage';
 import { ResearchPage } from './components/ResearchPage';
 import { FeedbackPage } from './components/FeedbackPage';
+import { ExpDoppler } from './components/ExpDoppler';
+import { ExpSimultaneity } from './components/ExpSimultaneity';
+import { ExpTwin } from './components/ExpTwin';
+import { ExpTrainTunnel } from './components/ExpTrainTunnel';
 import { ViewMode } from './types';
-import { HashRouter } from 'react-router-dom';
+import { BrowserRouter as Router } from 'react-router-dom';
 import { db } from './services/databaseService';
 import { AnalyticsProvider } from './contexts/AnalyticsContext';
-import { AlertCircle, ArrowRight, X, Cpu } from 'lucide-react';
+import { AlertCircle, ArrowRight, X, Cpu, XCircle } from 'lucide-react';
 import { Button } from './components/Button';
 
 const AppContent: React.FC = () => {
@@ -22,7 +26,8 @@ const AppContent: React.FC = () => {
   const [velocity, setVelocity] = useState(0); 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [hasStyle, setHasStyle] = useState(false);
-  const [isARMode, setIsARMode] = useState(false);
+  const [isAROnlyMode, setIsAROnlyMode] = useState(false);
+  const [targetSim, setTargetSim] = useState<string | null>(null);
   
   // Track completion of research tasks
   const [isQuizDone, setIsQuizDone] = useState(false);
@@ -35,8 +40,24 @@ const AppContent: React.FC = () => {
     const simParam = params.get('sim');
     const modeParam = params.get('mode');
 
-    if (modeParam === 'ar') {
-      setIsARMode(true);
+    if (modeParam === 'ar-only') {
+      setIsAROnlyMode(true);
+      setTargetSim(simParam);
+      // For AR-only mode, we can auto-login or use a guest session to bypass barriers
+      if (!db.getUser()) {
+          const guestUser = {
+              id: 'ar-guest-' + crypto.randomUUID(),
+              name: 'AR Explorer',
+              email: 'ar@explor.er',
+              gender: 'N/A', age: 0, education: 'N/A', university: 'N/A', fieldOfStudy: 'N/A', country: 'N/A',
+              loginTime: Date.now(), sessionCount: 1, learningStyle: 'Visual',
+              learningScores: { visual: 10, auditory: 5, kinesthetic: 5 }
+          };
+          db.saveUser(guestUser as any);
+      }
+      setIsLoggedIn(true);
+      setHasStyle(true);
+      return;
     }
 
     const user = db.getUser();
@@ -45,16 +66,13 @@ const AppContent: React.FC = () => {
       if (user.learningStyle) {
         setHasStyle(true);
       }
-
-      // If we have a sim deep-link, route immediately
       if (simParam) {
         handleDeepLink(simParam);
       }
     }
 
-    // Tab close warning
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isLoggedIn && (!isQuizDone || !isFeedbackDone)) {
+      if (isLoggedIn && !isAROnlyMode && (!isQuizDone || !isFeedbackDone)) {
         e.preventDefault();
         e.returnValue = '';
       }
@@ -71,8 +89,6 @@ const AppContent: React.FC = () => {
       case 'twin':
       case 'train_tunnel':
         setMode(ViewMode.EXPERIMENTS);
-        // Note: Actual sub-experiment selection is handled by the component's internal state
-        // but for a research app, jumping to the view is often enough.
         break;
       default: setMode(ViewMode.HOME);
     }
@@ -97,6 +113,39 @@ const AppContent: React.FC = () => {
       setMode(ViewMode.HOME);
     }
   };
+
+  // Dedicated AR-Only Immersive View
+  if (isAROnlyMode && targetSim) {
+      const renderARSim = () => {
+          switch(targetSim) {
+              case 'warp': return <Simulation velocity={velocity} setVelocity={setVelocity} forceAR={true} />;
+              case 'doppler': return <ExpDoppler forceAR={true} />;
+              case 'simultaneity': return <ExpSimultaneity forceAR={true} />;
+              case 'twin': return <ExpTwin forceAR={true} />;
+              case 'train_tunnel': return <ExpTrainTunnel forceAR={true} />;
+              default: return <div className="p-8 text-center">Sim not found</div>;
+          }
+      };
+
+      return (
+          <div className="fixed inset-0 bg-black z-[200] flex flex-col">
+              <div className="absolute top-4 left-4 right-4 z-[210] flex justify-between items-center pointer-events-none">
+                  <div className="bg-cyan-500/80 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-black flex items-center gap-2 pointer-events-auto shadow-lg">
+                      <Cpu size={12} className="animate-pulse" /> Immersive Spatial View: {targetSim}
+                  </div>
+                  <button 
+                    onClick={() => { window.location.href = window.location.origin + window.location.pathname; }}
+                    className="w-10 h-10 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center text-white pointer-events-auto border border-white/20 hover:bg-red-500/50"
+                  >
+                    <XCircle size={24} />
+                  </button>
+              </div>
+              <div className="flex-1">
+                  {renderARSim()}
+              </div>
+          </div>
+      );
+  }
 
   if (!isLoggedIn) {
     return <LoginPage onLoginSuccess={handleLogin} />;
@@ -131,22 +180,6 @@ const AppContent: React.FC = () => {
       <div className="min-h-screen bg-space-900 text-slate-100 font-sans selection:bg-cyan-500/30 flex flex-col">
         <Navbar currentMode={currentMode} setMode={setMode} onExit={attemptExit} />
         
-        {/* AR Mode HUD Overlay */}
-        {isARMode && (
-          <div className="bg-cyan-500/10 border-b border-cyan-500/30 py-2 px-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-cyan-400 text-xs font-black uppercase tracking-widest">
-              <Cpu size={14} className="animate-pulse" />
-              Immersive AR Mode Active
-            </div>
-            <button 
-              onClick={() => setIsARMode(false)}
-              className="text-[10px] text-slate-500 hover:text-white uppercase font-bold"
-            >
-              Exit Spatial View
-            </button>
-          </div>
-        )}
-
         <main className="flex-1 py-8 animate-in fade-in duration-300">
           {renderContent()}
         </main>
@@ -238,11 +271,11 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <HashRouter>
+    <Router>
        <AnalyticsProvider>
           <AppContent />
        </AnalyticsProvider>
-    </HashRouter>
+    </Router>
   );
 }
 

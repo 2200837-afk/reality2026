@@ -105,3 +105,13 @@ export const usePageTracking = (pageName: string) => {
     trackPageView(pageName);
   }, [pageName]);
 };
+
+// Fix: Added missing useARTracking export
+export const useARTracking = (featureId: string, isEnabled: boolean) => {
+  const { trackARInteraction } = useAnalytics();
+  useEffect(() => {
+    if (isEnabled) {
+      trackARInteraction(featureId, 'ar_mode_enabled');
+    }
+  }, [isEnabled, featureId, trackARInteraction]);
+};

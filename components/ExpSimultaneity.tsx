@@ -6,7 +6,8 @@ import { SpeechControl } from './SpeechControl';
 import { usePageTracking, useAnalytics } from '../contexts/AnalyticsContext';
 import { ARBookmark } from './ARBookmark';
 
-export const ExpSimultaneity: React.FC = () => {
+// Fix: Added forceAR prop to match other experiment components and resolve type error in App.tsx
+export const ExpSimultaneity: React.FC<{ forceAR?: boolean }> = ({ forceAR = false }) => {
   const [frame, setFrame] = useState<'platform' | 'train'>('platform');
   const [playing, setPlaying] = useState(false);
   const progressRef = useRef(0);
@@ -40,14 +41,16 @@ export const ExpSimultaneity: React.FC = () => {
   }, [playing]);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="bg-space-800 p-6 rounded-xl border border-space-700">
-        <div className="flex justify-between mb-6">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-                <Radio className="text-green-400" />
-                Relativity of Simultaneity
-            </h2>
-        </div>
+    <div className={`space-y-6 animate-in fade-in duration-300 ${forceAR ? 'h-full flex flex-col' : ''}`}>
+      <div className={`bg-space-800 p-6 rounded-xl border border-space-700 ${forceAR ? 'flex-1 bg-black border-none rounded-none' : ''}`}>
+        {!forceAR && (
+          <div className="flex justify-between mb-6">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <Radio className="text-green-400" />
+                  Relativity of Simultaneity
+              </h2>
+          </div>
+        )}
         
         <div className="flex gap-4 mb-8 justify-center">
             <Button size="sm" variant={frame === 'platform' ? 'primary' : 'secondary'} onClick={() => { setFrame('platform'); reset(); }}>
@@ -59,7 +62,7 @@ export const ExpSimultaneity: React.FC = () => {
         </div>
 
         {/* 2D Schematic Viewport */}
-        <div className="relative w-full h-[350px] bg-space-900 rounded-xl overflow-hidden border border-space-600 shadow-2xl flex flex-col items-center justify-center p-12">
+        <div className={`relative w-full ${forceAR ? 'flex-1' : 'h-[350px]'} bg-space-900 rounded-xl overflow-hidden border border-space-600 shadow-2xl flex flex-col items-center justify-center p-12`}>
              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#1e2548 1px, transparent 1px), linear-gradient(90deg, #1e2548 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
              
              {/* Schematic Elements */}
@@ -102,7 +105,7 @@ export const ExpSimultaneity: React.FC = () => {
              </div>
         </div>
         
-        <div className="mt-6 bg-green-900/10 p-4 rounded border border-green-500/20">
+        <div className={`mt-6 bg-green-900/10 p-4 rounded border border-green-500/20 ${forceAR ? 'bg-black/60 backdrop-blur-md border-white/10' : ''}`}>
             <p className="text-sm text-slate-300 leading-relaxed italic">
                 {explanationText}
             </p>
@@ -110,7 +113,7 @@ export const ExpSimultaneity: React.FC = () => {
         </div>
       </div>
 
-      <ARBookmark title="Simultaneity Paradox Interaction" simId="simultaneity" />
+      {!forceAR && <ARBookmark title="Simultaneity Paradox Interaction" simId="simultaneity" />}
     </div>
   );
 };

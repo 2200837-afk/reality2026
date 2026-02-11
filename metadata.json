@@ -1,0 +1,7 @@
+{
+  "name": "Relativity in Motion: Immersive",
+  "description": "An immersive exploration of Einstein's Special Theory of Relativity. Visualize time dilation, length contraction, and experience relativistic paradoxes with 3D AR simulations.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
